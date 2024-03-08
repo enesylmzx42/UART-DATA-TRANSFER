@@ -1,42 +1,34 @@
 # Data_Transfer_Using_UART
-Bu projede temelde UART iletişim protokolünün impelementasyonu arduino kullanılarak örnek bir projeyle ortaya koyulmuştur.
 
-## Projede Kullanılan Sensörler ve Mikrodenetleyiciler
-```
+This project primarily demonstrates the implementation of the UART communication protocol using Arduino through a sample project.
+
+## Sensors and Microcontrollers Used in the Project
 - DALLAS18B20
 - KY-003 HALL EFFECT SENSOR
 - LoRa 400T30D
 - SD CARD MODULE
 - Arduino Mega 2560
 - Arduino Uno
-```
 
-## Proje Tanıtımı
-Proje temelde alıcı ve verici devrelerinden oluşmaktadır. Tüm sensör ve modüller verici devresine bağlıdır. Projede sıcaklık okuma, manyetik alandan faydalanarak hız okuma, okunan verileri bir sd karta kaydetme ve verileri uzak bir mikrodenetleyici gönderme operasyonları kurgulanmıştır.
+## Project Introduction
+The project comprises both transmitter and receiver circuits, with all sensors and modules connected to the transmitter circuit. It involves temperature reading, speed calculation using the magnetic field, saving the read data to an SD card, and sending the data to a remote microcontroller.
 
-### Sıcaklık Okumak
-![sicaklik](https://github.com/0mustafa/Data_Transfer_Using_UART/assets/78226423/bbfcfec5-0db7-4fc0-bfbb-26b5d0fc4d0b)
-<br/>
-<br/>
-`getTemperatures.h` isimli oluşturulan kütüphanede sıcaklık okuma işlemleri DALLAS18B20 modülü kullanılarak gerçekleştirilmektedir. Sıcaklık değerini okumak işlemi asıl proje dosyasının loop kısmında `getTemps()` fonksiyonu çağırılarak gerçekleştirilir. Modül ile arduino arasında veri akışı UART ile sağlanmıştır.
-<br/>
-<br/>
+### Reading Temperature
+![temperature](https://github.com/0mustafa/Data_Transfer_Using_UART/assets/78226423/bbfcfec5-0db7-4fc0-bfbb-26b5d0fc4d0b)
 
-### Manyetik Alan Kullanarak Hız Hesaplamak
-![hiz](https://github.com/0mustafa/Data_Transfer_Using_UART/assets/78226423/164e8748-e3ec-4018-831e-4dde74b4d6f1)
-<br/>
-<br/>
-Modül tarafından her manyetik alan algılandığında bir interrupt oluşturulur ve sayac değeri 1 arttırılır. Her geçen bir saniyenin sonunda yine bir interrupt oluşturulur ve sayac değerine bakılarak yazılan algoritmayla hız hesaplaması yapılır. Modül ile arduino arasında veri akışı UART ile sağlanmıştır.
-<br/>
-<br/>
+The `getTemperatures.h` library is created for temperature reading using the DALLAS18B20 module. The temperature reading process is executed by calling the `getTemps()` function in the main project file's loop section. Data flow between the module and Arduino is facilitated by UART.
 
-### Verileri SD Card Modülüne Kaydetmek
-Proje ana dosyasında setup kısmının SD kart ile ilgili olan bölümünde SD kart ile bağlantı kurulmaya çalışılır. Bağlantı kurulduktan sonra daha önceden belirlenen dosya ismi kart içerisinde aranır ve kaç adet bu dosyadan olduğu tespit edilir. Yeni oluşturulacak veri kayıtları için yeni bir dosya adı belirlenir. Loop kısmında `saveSDCard()` fonksiyonu çağırılarak gelen veriler belirlenen desene göre kart içerisine yazılır. Modül ile arduino arasında veri akışı UART ile sağlanmıştır.
-<br/>
-<br/>
+### Calculating Speed Using Magnetic Field
+![speed](https://github.com/0mustafa/Data_Transfer_Using_UART/assets/78226423/164e8748-e3ec-4018-831e-4dde74b4d6f1)
 
-### Verileri Uzak Mikrodenetleyiciye Göndermek
-`LoRa 400T30D` haberleşme modülü kullanılarak belirlenen adres ve kanala veri gönderme işlemi gerçekleştiriliyor. Gönderme işlemleri `Lora.h` kütüphanesinde yapılmaktadır. Gönderilmek istenen veriler bir struct yapısına `initValues()` fonksiyonuyla gömülür. `sendLora()` fonksiyonu çalıştırılarak gönderme işlemi başlatılır. Alıcı kısmında aynı struct yapısı korunarak veriler karşılanmalıdır.
-<br/>
+An interrupt is created by the module each time a magnetic field is detected, incrementing a counter value. At the end of each passing second, another interrupt is created, and the speed calculation is performed based on the counter value using a predefined algorithm. Data flow between the module and Arduino is facilitated by UART.
+
+### Saving Data to SD Card Module
+In the project's main file's SD card-related setup section, an attempt is made to establish a connection with the SD card. Once connected, the previously determined file name is searched within the card, and the number of occurrences of this file is determined. A new file name is set for the newly created data records. In the loop section, the `saveSDCard()` function is called to write incoming data to the card based on a predefined pattern. Data flow between the module and Arduino is facilitated by UART.
+
+### Sending Data to Remote Microcontroller
+The data sending process is performed using the LoRa 400T30D communication module with a specified address and channel. Sending operations are handled in the `Lora.h` library. The data to be sent is embedded in a struct using the `initValues()` function. The `sendLora()` function is called to initiate the sending process. On the receiving end, the same struct must be maintained to handle the received data.
+
 ![lora](https://github.com/0mustafa/Data_Transfer_Using_UART/assets/78226423/b0325217-9b29-42ab-be40-7dcb1b72070b)
+
 
