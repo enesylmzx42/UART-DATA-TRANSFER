@@ -1,1 +1,114 @@
-{"payload":{"allShortcutsEnabled":true,"path":"Alici/Alici","repo":{"id":647242889,"defaultBranch":"main","name":"Data_Transfer_Using_UART","ownerLogin":"0mustafa","currentUserCanPush":false,"isFork":false,"isEmpty":false,"createdAt":"2023-05-30T14:11:47.000+03:00","ownerAvatar":"https://avatars.githubusercontent.com/u/78226423?v=4","public":true,"private":false},"currentUser":{"id":117593621,"login":"enesylmzx42","userEmail":"x14916@gmail.com"},"refInfo":{"name":"main","listCacheKey":"v0:1685445620.848106","canEdit":true,"refType":"branch","currentOid":"5673c7fdaa4e833bec45494d62dced036dd528d0"},"tree":{"items":[{"name":"Alici.ino","path":"Alici/Alici/Alici.ino","contentType":"file"}],"templateDirectorySuggestionUrl":null,"readme":null,"totalCount":1,"showBranchInfobar":false},"fileTree":{"Alici":{"items":[{"name":"Alici","path":"Alici/Alici","contentType":"directory"}],"totalCount":1},"":{"items":[{"name":"Alici","path":"Alici","contentType":"directory"},{"name":"Lora.h","path":"Lora.h","contentType":"file"},{"name":"README.md","path":"README.md","contentType":"file"},{"name":"calcSpeed.h","path":"calcSpeed.h","contentType":"file"},{"name":"getTemperatures.h","path":"getTemperatures.h","contentType":"file"},{"name":"proje.ino","path":"proje.ino","contentType":"file"}],"totalCount":6}},"fileTreeProcessingTime":3.263515,"foldersToFetch":[],"showSurveyBanner":false,"showCodeNavSurvey":true,"csrf_tokens":{"/0mustafa/Data_Transfer_Using_UART/branches":{"post":"vb_sMpRQphMd-bJcqEJAa0wv7lVT-7Q2vE0Iqm_AHRZJX1zTpMHYSeZfVFJ0w-LgTfggUv2CgfhqQJAXwUhnhg"},"/0mustafa/Data_Transfer_Using_UART/branches/fetch_and_merge/main":{"post":"TeX0NmmuntPBIG9CBM8d51bABUynSnRtNZHJWHBiyz-0OzsY5p9qHW_pBhvSlPy0BazB2BJ1ydUZjavNUXjPug"},"/0mustafa/Data_Transfer_Using_UART/branches/fetch_and_merge/main?discard_changes=true":{"post":"uNnkj2vkIYAL2nbUDkCSqyhA2YvxU35S14SWBavgJxxBByuh5NXVTqUTH43YG3P4eywdH0Rsw-r7mPSQivojmQ"}}},"title":"Data_Transfer_Using_UART/Alici/Alici at main · 0mustafa/Data_Transfer_Using_UART","locale":"en"}
+#include "LoRa_E22.h"
+#include <SoftwareSerial.h>
+
+
+SoftwareSerial mySerial(10, 11); // Arduino'da 10 numarali pin RX, 11 numarali pin TX olarak ayarlanıyor
+LoRa_E22 LoRa(&mySerial);
+
+#define M0 13
+#define M1 12
+#define Adres 3   //0--65000 arası bir değer girebilirsiniz. Diğer Modüllerden FARKLI olmalı
+#define Kanal 20  //Frekans değeri
+//E22 için 0--80 arasında bir sayı giriniz. Diğer Modüllerle AYNI olmalı.
+//E22 900 için Frekans = 850+kanal değeri.
+#define Netid 63  //0--65000 arası bir değer girebilirsiniz. Diğer Modüllerle AYNI olmalı.
+
+
+struct Message {
+  byte speed[9];
+  byte temp[5];
+} datas;
+
+void setup() {
+  
+  // Lora Modu (0,0 -> LoRa calistirma modu)
+  pinMode(M0, OUTPUT);
+  pinMode(M1, OUTPUT);
+
+  Serial.begin(9600); // Bilgisayar baglantisi baslatildi.
+  LoRa.begin();  // LoRa baglantisi baslatildi
+
+  // Lora ayarlari yapiliyor.
+  LoraE22Ayarlar();
+
+  // LoRa calistirma modu
+  digitalWrite(M0, LOW);
+  digitalWrite(M1, LOW);
+
+  Serial.println("Baslatiliyor...");
+}
+
+void loop() {
+  
+   while (LoRa.available() > 1) {
+
+    ResponseStructContainer rscData = LoRa.receiveMessage(sizeof(Message));
+    datas = *(Message*)rscData.data;
+    rscData.close();
+
+    Serial.print("Hiz: ");
+    Serial.print(*(float*)datas.speed);
+    Serial.println();
+    Serial.print("Sicaklik: ");
+    Serial.print(*(float*)datas.temp);
+    Serial.print("\n");
+  }
+
+}
+
+
+// LoRa Ayarlarinin yapildigi fonksiyon.
+void LoraE22Ayarlar() {
+
+  digitalWrite(M0, LOW);
+  digitalWrite(M1, HIGH);
+
+  ResponseStructContainer c;
+  c = LoRa.getConfiguration();
+  Configuration configuration = *(Configuration*)c.data;
+
+  //DEĞİŞEBİLEN AYARLAR
+  // Üstte #define kısmında ayarlayınız
+  configuration.ADDL = lowByte(Adres);
+  configuration.ADDH = highByte(Adres);
+  configuration.NETID = Netid;
+  configuration.CHAN = Kanal;
+
+  //SEÇENEKLİ AYARLAR
+  configuration.SPED.airDataRate = AIR_DATA_RATE_010_24;  //Veri Gönderim Hızı 2,4 varsayılan
+  //configuration.SPED.airDataRate = AIR_DATA_RATE_000_03;  //Veri Gönderim Hızı 0,3 En uzak Mesafe
+  //configuration.SPED.airDataRate = AIR_DATA_RATE_111_625; //Veri Gönderim Hızı 62,5 En Hızlı
+
+  //configuration.OPTION.subPacketSetting = SPS_240_00;  //veri paket büyüklüğü 240 byte Varsayılan
+  //configuration.OPTION.subPacketSetting = SPS_064_10; //veri paket büyüklüğü 64 byte
+  configuration.OPTION.subPacketSetting = SPS_032_11;  //veri paket büyüklüğü 32 en hızlısı
+
+  configuration.OPTION.transmissionPower = POWER_22;  //Geönderim Gücü max Varsayılan
+  //configuration.OPTION.transmissionPower = POWER_13;
+  //configuration.OPTION.transmissionPower = POWER_10;  //Geönderim Gücü min
+
+  //GELİŞMİŞ AYARLAR
+  configuration.SPED.uartBaudRate = UART_BPS_9600;
+  configuration.SPED.uartParity = MODE_00_8N1;
+  configuration.TRANSMISSION_MODE.WORPeriod = WOR_2000_011;
+  configuration.OPTION.RSSIAmbientNoise = RSSI_AMBIENT_NOISE_DISABLED;
+
+  //configuration.TRANSMISSION_MODE.WORTransceiverControl = WOR_TRANSMITTER;
+  configuration.TRANSMISSION_MODE.WORTransceiverControl = WOR_RECEIVER;
+
+  //configuration.TRANSMISSION_MODE.enableRSSI = RSSI_ENABLED;
+  configuration.TRANSMISSION_MODE.enableRSSI = RSSI_DISABLED;
+
+  configuration.TRANSMISSION_MODE.fixedTransmission = FT_FIXED_TRANSMISSION;
+  //configuration.TRANSMISSION_MODE.fixedTransmission = FT_TRANSPARENT_TRANSMISSION;
+
+  configuration.TRANSMISSION_MODE.enableRepeater = REPEATER_DISABLED;
+  //configuration.TRANSMISSION_MODE.enableRepeater = REPEATER_ENABLED;
+
+  configuration.TRANSMISSION_MODE.enableLBT = LBT_DISABLED;
+  // configuration.TRANSMISSION_MODE.enableLBT = LBT_ENABLED;
+
+  // Ayarları KAYDET ve SAKLA
+  ResponseStatus rs = LoRa.setConfiguration(configuration, WRITE_CFG_PWR_DWN_SAVE);
+  c.close();
+}
