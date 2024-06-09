@@ -1,4 +1,4 @@
-# Data_Transfer_Using_UART
+## Data_Transfer_Using_UART
 
 This project primarily demonstrates the implementation of the UART communication protocol using Arduino through a sample project.
 
